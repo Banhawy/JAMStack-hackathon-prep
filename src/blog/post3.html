@@ -1,0 +1,95 @@
+<h1 id="making-a-python-web-crawler">Making a Python Web Crawler</h1>
+<p>Disclaimer: I am by no means an advanced developer/programmer now and I definitely didn&#39;t know python at all when I started my internship. Just because you might not know python or never automated anything with code before doesn&#39;t mean it will take you years to learn how to. In fact it only took me a week or so to get the hang of it.
+<img src="../img/post2-0.png" alt="command line screenshot"></p>
+<h2 id="the-problem-a-manual-daily-task-and-a-weak-memory">The Problem: A manual daily task and a weak memory</h2>
+<p>Part of my job as a student intern developer is to provide occasional help to the marketing team in the office with analytics and data gathering.
+One of those tasks is to check the university&#39;s main website&#39;s front page everyday to see if the featured article has changed. If so, I need to record the dates this article stayed up, take a screenshot, and record its title, description, and number of clicks it got in a google spreadsheet.</p>
+<p>Those are A LOT of steps not to mention having to remember to do that every single day when I have so many other tasks. Also, what if I checked one day before leaving work at 5:00 PM, and the article was updated at 5:05PM. I would notice the change only next morning and record down the incorrect date of removal.</p>
+<p>Up until 2 months ago, I did that routine and I was bad at it because some days I would forget to check and would have to check archive.org for a cached copy online. One day I decided I&#39;ve had enough and decided to learn web crawling.</p>
+<h2 id="web-crawling-with-python-and-beautiful-soup-">Web Crawling with Python and Beautiful Soup:</h2>
+<p>Python is a really simple language that I managed to pick up in a week or two. You don&#39;t need to learn much except for the basic syntax, for loops, and importing libraries to start crawling the web. A good place to start is with this excellent book. (This links to the free online version)
+In my case, I used a library called Beautiful Soup that basically takes an HTML page and breaks it down into one big dictionary you can traverse and change. If you want to learn more about how to use Beautiful Soup and go through a tutorial this post by Justin Yek is a great place to start.
+I first created a python file, named it homepage, and imported the libraries to be used:</p>
+<pre><code>import datetime
+import urllib2
+from bs4 import BeautifulSoup
+import unicodedata</code></pre><p>I use the datetime library to record and print the date and time the crawler/program is run:</p>
+<pre><code># Print Timestamp At time of crawl
+datePosted = str(datetime.date.today())
+print( &#39;Time of Crawl:  &#39; + datePosted)</code></pre><p>I then use the urllib2 library to get the HTML document of the front page, and use BeautifulSoup library to parse it:</p>
+<pre><code># Get page and parse its content
+url =  &#39;https://twin-cities.umn.edu/&#39;
+page = urllib2.urlopen(url)
+soup = BeautifulSoup(page,  &#39;html.parser&#39;)</code></pre><p>Now I have the page&#39;s HTML in a nice dictionary so I can extract the featured article&#39;s url, image link, title, and so on.
+From inspecting the homepage in chrome dev tools, I find out that the featured article&#39;s image always has a class of either <em>mast__img</em> if it&#39;s a static image, or <em>mast__mobile</em> otherwise. (The otherwise happened when I found an error in the program&#39;s log one day not finding <em>mast__img</em>). I use BeatifulSoup&#39;s <strong>.find()</strong> method to target the article&#39;s image tag by its class:</p>
+<pre><code># In case the featured article has an image
+imageLinkText = soup.find( &#39;img&#39;, attrs={ &#39;class&#39;:  &#39;mast__img&#39;})
+# In case the featured article has a video
+videoLinkText = soup.find(&#39;img&#39;, attrs={&#39;class&#39;: &#39;mast__mobile&#39;})</code></pre><p>Now the article&#39;s img tag is stored as an object in <em>imageLinkText/ videoLinkText</em>. Because I&#39;m super lazy and I don&#39;t want to take a screenshot of the featured article as well, I will instead get the article&#39;s image link so I can access it even when a newer article is published. I use a similar technique to get that info, this time by targetting the image&#39;s src attribute:</p>
+<pre><code># Get Image link
+try:
+   src = imageLinkText.get(&#39;src&#39;)
+except AttributeError:
+   src = videoLinkText.get(&#39;src&#39;)
+imageLink = unicodedata.normalize(&#39;NFKD&#39;, src).encode(&#39;ascii&#39;, &#39;ignore&#39;)
+print(&#39;Image Link: \n&#39; + imageLink)</code></pre><p>I need to normalize unicode data in src variable to remove umlauts, accents etc. For example &quot;na&#239;ve caf&#233;    &quot; would be changed to &quot;naive cafe&quot;. I take this step to avoid any errors while printing out and storing ascii values.
+<img src="../img/post2-1.png" alt="screenshot of website&#39;s source page"></p>
+<p>Now to get the Article title and description I had to dig deep and be extra specific.
+I can&#39;t use <strong>.find()</strong> to get the class <em>mast__text</em> because that would return both the article title in the first p child as well as the description in the second p child. Instead I used BeautifulSoup&#39;s CSS selector method <strong>.select()</strong> which takes css selectors as its argument. In my case, I want the first p child of the class <em>.mast__text</em> so I choose <strong>&quot;.mast__text p:nth-of-type(1)&quot;</strong>:</p>
+<pre><code># Get Article Title
+articleTitle = soup.select(&#39;.mast__text p:nth-of-type(1)&#39;)[0].text.strip().encode(&#39;ascii&#39;, &#39;ignore&#39;).strip()
+print(title)</code></pre><p>This will return an array of the matching elements. If the selector is specific enough it should return an array with one item. I convert the item from html code to text with <strong>.text</strong> and strip away white spaces with <strong>.strip()</strong> and store it in articleTitle variable.
+I use the same technique to get the article description:</p>
+<pre><code># Get Article description
+articleDescriptionList = soup.select(&#39;.mast__text p:nth-of-type(2)&#39;)
+articleDescription = articleDescriptionList[0].text.strip().encode(&#39;ascii&#39;, &#39;ignore&#39;).strip()
+print(&#39;Article Description: \n&#39; + articleDescription)</code></pre><p>Finally, I have the article link left to extract. Again I will use the css selector to get the first anchor tag within the featured article div given the class name <em>.node-promoted</em>:</p>
+<pre><code># Get Article Link
+articleLink = soup.select(&#39;.node-promoted a:nth-of-type(1)&#39;)
+articleLink = articleLink[0].get(&#39;href&#39;)
+print(&#39;Article Link: \n&#39; + articleLink)</code></pre><p><em>soup.select( &#39;.node-promoted a:nth-of-type(1)&#39;)</em> returns an array with first item as an html object:</p>
+<pre><code>&lt;a href=&quot;https://twin-cities.umn.edu/news-events/creating-countrys-identity&quot; title=&quot;Learn more about Haider&#39;s art.&quot;&gt;</code></pre><p>To get the article&#39;s url I use <strong>.get()</strong> to get the value within the href attribute.
+Putting things together, the code should look like this:</p>
+<pre><code>import datetime
+import urllib2
+from bs4 import BeautifulSoup
+import unicodedata
+
+# Print Timestamp At time of crawl
+datePosted = str(datetime.date.today())
+print( &#39;Time of Crawl:  &#39; + datePosted)
+
+# Get page and parse its content
+url =  &#39;https://twin-cities.umn.edu/&#39;
+page = urllib2.urlopen(url)
+soup = BeautifulSoup(page,  &#39;html.parser&#39;)
+
+# In case the featured article has an image
+imageLinkText = soup.find( &#39;img&#39;, attrs={ &#39;class&#39;:  &#39;mast__img&#39;})
+# In case the featured article has a video
+videoLinkText = soup.find(&#39;img&#39;, attrs={&#39;class&#39;: &#39;mast__mobile&#39;})
+
+# Get Image link
+try:
+   src = imageLinkText.get(&#39;src&#39;)
+except AttributeError:
+   src = videoLinkText.get(&#39;src&#39;)
+imageLink = unicodedata.normalize(&#39;NFKD&#39;, src).encode(&#39;ascii&#39;, &#39;ignore&#39;)
+print(&#39;Image Link: \n&#39; + imageLink)
+
+# Get Article Title
+articleTitle = soup.select(&#39;.mast__text p:nth-of-type(1)&#39;)[0].text.strip().encode(&#39;ascii&#39;, &#39;ignore&#39;).strip()
+print(title)
+
+# Get Article description
+articleDescriptionList = soup.select(&#39;.mast__text p:nth-of-type(2)&#39;)
+articleDescription = articleDescriptionList[0].text.strip().encode(&#39;ascii&#39;, &#39;ignore&#39;).strip()
+print(&#39;Article Description: \n&#39; + articleDescription)
+
+# Get Article Link
+articleLink = soup.select(&#39;.node-promoted a:nth-of-type(1)&#39;)
+articleLink = articleLink[0].get(&#39;href&#39;)
+print(&#39;Article Link: \n&#39; + articleLink)</code></pre><p>The output when run from the command line should look like this:
+<img src="../img/post2-2.png" alt="command line screenshot"></p>
+<p>Voila! That&#39;s the first useful web crawler I wrote and I depend on it till today. Of course the first version wasn&#39;t perfect, and the try/catch blocks are the results of uncaught errors some days, and even when writing this post I managed to optimize it a bit more.</p>
+<p>This program alone would have been enough for me to cut the time I spent on this task from 10-15 minutes to 3-5 minutes when using the crawler. That&#39;s what I did for a few days until I gave the program more features and hooked it up to a google spreadsheet to keep a log online. However, this is a topic for a later post.</p>

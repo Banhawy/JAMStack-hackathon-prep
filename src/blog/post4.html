@@ -1,0 +1,76 @@
+<h1 id="parsing-command-line-arguments-in-python">Parsing Command Line Arguments in Python</h1>
+<p>Python is a very flexible and popular programming language because of its simplicity, modularity, and power. So far I&#39;ve been writing python programs that just automated some manual tasks and other statistical analysis work. However, I never really thought about running a python program with an arguement. The most I&#39;ve interacted with a python program was just testing I/O methods while I was learning it.</p>
+<p>This was until I was given a task at work that required me to write a reusable command line program that would take a URL and crawl that URL or the URL&#39;s entire domain and log the results based on the command line flags.</p>
+<h2 id="the-command-line-args-arguements-">The command line ARGS! (arguements)</h2>
+<p>Having your program accept arguements and flags on launch is a neat process. It&#39;s certainly the first time I have to program code like that in python (I&#39;ve done it in node.js but not with flags). After considering my options when it comes to the python library I chose to go with <strong><a href="https://docs.python.org/2/library/argparse.htm">argparse</a></strong>.</p>
+<p>First I import the <em>argparse</em> library and I define an <em>ArgumentParser</em> object that will contain the neccessary information to parse the command line into Python data types. You can think of the ArguementParser object as an empty key/value dictionary.</p>
+<pre><code>#!/usr/local/bin/python3
+import sys, argparse
+import root_crawl, man_crawl
+
+parser = argparse.ArgumentParser()</code></pre><p>Now that I have a parser object, I need to fill it with arguements from the command lines. This is done by the <em>add_arguement()</em> method which when called on the parser object creates attributes in the parse with the values of the <em>add_argument</em> method.</p>
+<pre><code>parser.add_argument(&#39;url&#39;, help=&quot;Check a url for straight quotes&quot;, type=str)
+
+args = parser.parse_args()</code></pre><p>The above code tells the parser to take the first command line arguement, call it <em>url</em>, assume it is a string type, and provide custom help message about the argument variable when called with the -h/--help flag.</p>
+<h2 id="putting-up-the-flags">Putting up the Flags</h2>
+<p>Now that I&#39;ve created a place to store and parse my program&#39;s <em>1st</em> argument, I want to have additional optional flags to indicate whether the user wants to crawl a <em>specific page</em> or an <em>entire domain</em>.  </p>
+<p>The two options I want are:</p>
+<ol>
+<li>The ability to provide the website&#39;s root/main page and crawl the entire website.</li>
+<li>The option to log the results into a spreadhseet.</li>
+</ol>
+<p>For the first option I can create a flag, called <em>--root</em> or <em>-r</em> for short. 
+For the second option I can create a flag, called <em>--excel</em> or <em>-e</em> for short.</p>
+<p>How do we program this?</p>
+<p>We use the same <em>add_argument()</em> method again to create these options with slightly different attributes.</p>
+<pre><code>parser.add_argument(&#39;url&#39;, help=&quot;Check a url for straight quotes&quot;, type=str)
+
+parser.add_argument(&quot;-r&quot;, &quot;--root&quot;, help=&quot;Scans all links on website&#39;s sitemap&quot;, action=&quot;store_true&quot;)
+
+parser.add_argument(&quot;-e&quot;, &quot;--excel&quot;, help=&quot;Logs results into an excel spreadsheet&quot;, action=&quot;store_true&quot;)
+
+args = parser.parse_args()</code></pre><p>When creating a flag, we need to provide the add_argument method with the name of the flag preceeded by the <strong>--</strong> or <em>-</em> prefix. (Note: It is not necessary to have both the short and long flag names, but it is preffered). The help attributes is useful to provide the user info about the flags, and the <em>action</em> attribute stores the boolean value <em>True</em>. </p>
+<p>Notice that we haven&#39;t touched on the subject of crawling which is discussed in a separate blog post.</p>
+<h2 id="implementing-the-logic">Implementing the Logic</h2>
+<p>Now that we have the positional arguement and the optional flags defined, it&#39;s time to implement the logic of the program.</p>
+<p>First we start off with the basecase. The simplest way a user would use the program is to to call the program and provide it with just one URL to crawl.</p>
+<pre><code>python3 scan URL</code></pre><p>In this case the program will take the first command line arguement <em>URL</em> and match it against the ArgParse parser object&#39;s attributes. It will store the URL given in the command line in the first non-flag attribute <em>url</em> of the parser object.</p>
+<p>What about the other attributes of the parser object, namely --root and --excel?</p>
+<p>They default to <em>False</em>.
+To see this inaction you can print out the parser object <em>args</em> to screen to get the following:</p>
+<pre><code>$ python3 scan.py  https://www.google.com
+
+=&gt;$ Namespace(excel=False, root=False, url=&#39;https://www.google.com&#39;)</code></pre><p>To access and use the URL in the first command line arguement we can use <strong>args.url</strong></p>
+<p>In my case, I will pass the url and the truth value of the excel flag to to a function that will crawl the webpage and log the results to a spreadsheet if the excel value is True. This function is defined in a separate file so I import and use it.</p>
+<pre><code>man_crawl.crawl(args.url, args.excel)</code></pre><p>Now any website put as the first command line arguement will be passed as the first parameter of the crawler function. I also pass the excel attribute of the parser object which defaults to false because the <em>-e/--excel</em> flag was not used in the command line. If the user were to use the <em>--excel</em> flag then <em>args.excel</em> would be set to <em>True</em>.</p>
+<p>The other case is if the user uses the <em>-r/--root</em> flag to indicate the intention to crawl the entire website. In this case we need to modify the code to check first if the root flag was used:</p>
+<pre><code>if args.root:
+    root_crawl.crawl(args.url, args.excel)
+else:
+    man_crawl.crawl(args.url, args.excel)</code></pre><p>Of course, if the root flag is used then it would use another function from another file that I import as well.</p>
+<p>Best thing about the <em>argparse</em> module is that it automatically handles the <strong>-h/--help</strong> flag that pulls all those flag help info written earlier and displays them nicely on the command line.</p>
+<pre><code>$ python3 scan.py -h
+usage: scan.py [-h] [-r] [-e] url
+
+positional arguments:
+  url          Check a url for straight quotes
+
+optional arguments:
+  -h, --help   Show this help message and exit
+  -r, --root   Scans all links on website&#39;s sitemap
+  -e, --excel  Logs results into an excel spreadsheet</code></pre><p>In the end the code should look like this:</p>
+<pre><code>#!/usr/local/bin/python3
+import argparse
+import root_crawl, man_crawl
+
+parser = argparse.ArgumentParser()
+parser.add_argument(&#39;url&#39;, help=&quot;Check a url for straight quotes&quot;, type=str)
+parser.add_argument(&quot;-r&quot;, &quot;--root&quot;, help=&quot;Scans all links on website&#39;s sitemap&quot;, action=&quot;store_true&quot;)
+parser.add_argument(&quot;-e&quot;, &quot;--excel&quot;, help=&quot;Logs results into an excel spreadsheet&quot;, action=&quot;store_true&quot;)
+
+args = parser.parse_args()
+
+if args.root:
+    root_crawl.crawl(args.url, args.excel)
+else:
+    man_crawl.crawl(args.url, args.excel)</code></pre><p>Of course, this interaction could be implemnted differently using I/O but it just so happens that this was the requirement, and for UNIX and terminal users this should be very user friendly and efficient.</p>

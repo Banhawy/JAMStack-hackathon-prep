@@ -1,0 +1,43 @@
+<h1 id="3-ways-to-create-react-components">3 Ways to Create React Components</h1>
+<p>ReactJS is a great javascript library for reusing HTML code snippets throughout your website. It does so by using JSX and ES6 syntax to infuse your regular Javascript code with pure HTML code and compiles it via Babel to javascript that creates that HTML snippets on the page.
+Use CDN to import React and Babel
+You can quickly start using React by including the following scripts in your HTML&#39;s header tag:</p>
+<pre><code>&lt;script src=&quot;https://unpkg.com/react@15/dist/react.min.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://unpkg.com/react-dom@15/dist/react-dom.min.js&quot;&gt;&lt;/script&gt;</code></pre><p>Additionally, you need to include Babel to compile your React code. Include the following script underneath the others:</p>
+<pre><code>&lt;script src=&quot;https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.34/browser.js&quot;&gt;&lt;/script&gt;</code></pre><h2 id="method-1-using-a-variable-function">Method #1: Using a Variable Function</h2>
+<p>When React was first created there was only one way to declare a component. Let&#39;s build a simple HTML page with an h1 and a p tag.
+In your javascript file/tag, declare a variable and use the React.createClass() function to create a component:</p>
+<pre><code>var MyComponent = React.createClass({
+   render() {
+      return &lt;div&gt;
+                &lt;h1&gt;Hello World!&lt;/h1&gt;
+                &lt;p&gt;This is my first React Component.&lt;/p&gt;
+             &lt;/div&gt;
+      }
+})</code></pre><p>The variable MyComponent now contains a react component that can be used anywhere on a website.
+To link that script to an HTML page, first you must have a div element with a unique id on the page.
+<code>&lt;div id=&quot;react-component&quot;&gt;&lt;/div&gt;</code>
+Then in your script after declaring the react component variable, use the ReactDOM.render() function which takes 2 arguments. The first is the react component, and the second is the targeted HTML element.
+<code>ReactDOM.render(&lt;MyComponent /&gt;, document.getElementById(&#39;react-component&#39;))</code>
+After saving and running the HTML file, the page should display without errors:</p>
+<p>Method #2: Using a Class
+For those who are not caught up with Javascript evolution news, the language now supports classes. You can create a javascript class the extends (a.k.a. inherits) React&#39;s Component class and re-write the above method:</p>
+<pre><code>class MyComponent extends React.Component{
+   render() {
+      return &lt;div&gt;
+                &lt;h1&gt;Hello World!&lt;/h1&gt;
+                &lt;p&gt;This is my first React Component.&lt;/p&gt;
+             &lt;/div&gt;
+      }
+}</code></pre><p>You would then use ReactDOM.render() the same way again to target the HTML element by id.</p>
+<h2 id="method-3-using-a-stateless-functional-component">Method #3: Using a Stateless Functional Component</h2>
+<p>Sounds scary when you say it out loud. But it&#39;s really means a simple function (as opposed to a variable) that returns a react component. Here you will see some new ES6 syntax that makes javascript codes shorter and easier to read.
+First create a const called MyComponent and set it equal to a function () and use the arrow function =&gt; to declare the function logic:</p>
+<pre><code>const MyComponent = () =&gt; {
+      return &lt;div&gt;
+                &lt;h1&gt;Hello World!&lt;/h1&gt;
+                &lt;p&gt;This is my first React Component.&lt;/p&gt;
+             &lt;/div&gt;
+      }
+}</code></pre><p>Notice that we didn&#39;t have to use the render() function inside our function here. We just return the HTML div. It&#39;s a nice way to reduce amount of code you write.</p>
+<p>And there you have it. These are the 3 main ways you can create a React component! The best way to learn is to write them out and test them in your browser and don&#39;t hesitate to read the documentation!</p>
